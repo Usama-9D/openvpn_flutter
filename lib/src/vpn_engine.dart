@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/services.dart';
-import 'model/vpn_status.dart';
+import 'package:openvpn_flutter/openvpn_flutter.dart';
+
 
 ///Stages of vpn connections
 enum VPNStage {
@@ -16,24 +17,18 @@ enum VPNStage {
   disconnecting,
   denied,
   error,
-// ignore: constant_identifier_names
   wait_connection,
-// ignore: constant_identifier_names
   vpn_generate_config,
-// ignore: constant_identifier_names
   get_config,
-// ignore: constant_identifier_names
   tcp_connect,
-// ignore: constant_identifier_names
   udp_connect,
-// ignore: constant_identifier_names
   assign_ip,
   resolve,
   exiting,
   unknown
 }
 
-class OpenVPN {
+class OpenVPNService {
   ///Channel's names of _vpnStageSnapshot
   static const String _eventChannelVpnStage =
       "id.laskarmedia.openvpn_flutter/vpnstage";
@@ -44,7 +39,7 @@ class OpenVPN {
 
   ///Method channel to invoke methods from native side
   static const MethodChannel _channelControl =
-      MethodChannel(_methodChannelVpnControl);
+  MethodChannel(_methodChannelVpnControl);
 
   ///Snapshot of stream that produced by native side
   static Stream<String> _vpnStageSnapshot() =>
@@ -72,17 +67,15 @@ class OpenVPN {
   /// OpenVPN's Constructions, don't forget to implement the listeners
   /// onVpnStatusChanged is a listener to see vpn status detail
   /// onVpnStageChanged is a listener to see what stage the connection was
-  OpenVPN({this.onVpnStatusChanged, this.onVpnStageChanged});
+  OpenVPNService({this.onVpnStatusChanged, this.onVpnStageChanged});
 
   ///This function should be called before any usage of OpenVPN
   ///All params required for iOS, make sure you read the plugin's documentation
-  ///
-  ///
+
   ///providerBundleIdentfier is for your Network Extension identifier
-  ///
+
   ///localizedDescription is for description to show in user's settings
-  ///
-  ///
+
   ///Will return latest VPNStage
   Future<void> initialize({
     String? providerBundleIdentifier,
@@ -93,10 +86,10 @@ class OpenVPN {
   }) async {
     if (Platform.isIOS) {
       assert(
-          groupIdentifier != null &&
-              providerBundleIdentifier != null &&
-              localizedDescription != null,
-          "These values are required for ios.");
+      groupIdentifier != null &&
+          providerBundleIdentifier != null &&
+          localizedDescription != null,
+      "These values are required for ios.");
     }
     onVpnStatusChanged?.call(VpnStatus.empty());
     initialized = true;
@@ -119,40 +112,36 @@ class OpenVPN {
   }
 
   ///Connect to VPN
-  ///
+
   ///config : Your openvpn configuration script, you can find it inside your .ovpn file
-  ///
+
   ///name : name that will show in user's notification
-  ///
+
   ///certIsRequired : default is false, if your config file has cert, set it to true
-  ///
+
   ///username & password : set your username and password if your config file has auth-user-pass
-  ///
+
   ///bypassPackages : exclude some apps to access/use the VPN Connection, it was List<String> of applications package's name (Android Only)
-  Future connect(String config, String name,
+
+  void connect(String config, String name,
       {String? username,
-      String? password,
-      List<String>? bypassPackages,
-      bool certIsRequired = false}) {
+        String? password,
+        List<String>? bypassPackages,
+        bool certIsRequired = false}) async {
     if (!initialized) throw ("OpenVPN need to be initialized");
     if (!certIsRequired) config += "client-cert-not-required";
     _tempDateTime = DateTime.now();
-
-    try {
-      return _channelControl.invokeMethod("connect", {
-        "config": config,
-        "name": name,
-        "username": username,
-        "password": password,
-        "bypass_packages": bypassPackages ?? []
-      });
-    } on PlatformException catch (e) {
-      throw ArgumentError(e.message);
-    }
+    _channelControl.invokeMethod("connect", {
+      "config": config,
+      "name": name,
+      "username": username,
+      "password": password,
+      "bypass_packages": bypassPackages ?? []
+    });
   }
 
   ///Disconnect from VPN
-  void disconnect() {
+  void disconnect()  {
     _tempDateTime = null;
     _channelControl.invokeMethod("disconnect");
     if (_vpnStatusTimer?.isActive ?? false) {
@@ -197,16 +186,16 @@ class OpenVPN {
             var connectedOn =
                 DateTime.tryParse(data["connected_on"].toString()) ??
                     _tempDateTime;
+            if (connectedOn == null) return VpnStatus.empty();
             String byteIn =
-                data["byte_in"] != null ? data["byte_in"].toString() : "0";
+            data["byte_in"] != null ? data["byte_in"].toString() : "0";
             String byteOut =
-                data["byte_out"] != null ? data["byte_out"].toString() : "0";
+            data["byte_out"] != null ? data["byte_out"].toString() : "0";
             if (byteIn.trim().isEmpty) byteIn = "0";
             if (byteOut.trim().isEmpty) byteOut = "0";
             return VpnStatus(
               connectedOn: connectedOn,
-              duration:
-                  _duration(DateTime.now().difference(connectedOn!).abs()),
+              duration: _duration(DateTime.now().difference(connectedOn).abs()),
               byteIn: byteIn,
               byteOut: byteOut,
               packetsIn: byteIn,
@@ -280,7 +269,8 @@ class OpenVPN {
     return VPNStage.unknown;
   }
 
-  ///Initialize listener, called when you start connection and stoped while
+  ///Initialize listener, called when you start connection and stopped while
+
   void _initializeListener() {
     _vpnStageSnapshot().listen((event) {
       var vpnStage = _strToStage(event);
@@ -308,7 +298,7 @@ class OpenVPN {
     }
     _vpnStatusTimer ??=
         Timer.periodic(const Duration(seconds: 1), (timer) async {
-      onVpnStatusChanged?.call(await status());
-    });
+          onVpnStatusChanged?.call(await status());
+        });
   }
 }
