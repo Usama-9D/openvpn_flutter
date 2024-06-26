@@ -279,7 +279,7 @@ class OpenVPNService {
         _lastStage = vpnStage;
       }
       if (vpnStage != VPNStage.disconnected) {
-        if (Platform.isAndroid) {
+        if (Platform.isAndroid && vpnStage == VPNStage.connected) {
           _createTimer();
         } else if (Platform.isIOS && vpnStage == VPNStage.connected) {
           _createTimer();
