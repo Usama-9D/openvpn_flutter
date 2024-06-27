@@ -156,7 +156,7 @@ class OpenVPNService {
   }
 
   /// Get latest connection status
-  Future<VpnStatus> status() {
+  Future<VpnStatus> status() async {
     // Have to check if user is already connected to get real data
     return stage().then((value) async {
       var status = VpnStatus.empty();
