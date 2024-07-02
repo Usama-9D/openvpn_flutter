@@ -1,3 +1,5 @@
+package android
+
 group 'id.laskarmedia.openvpn_flutter'
 version '1.0'
 
