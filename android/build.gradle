@@ -46,5 +46,5 @@ android {
 }
 
 dependencies {
-    implementation 'com.github.Usama-9D:openvpn_library:bf2d6a4'
+    implementation 'com.github.Usama-9D:openvpn_library:4b7a79ce00a'
 }
